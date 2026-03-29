@@ -11,7 +11,7 @@ const competitionRoutes = require("./routes/competitionRoutes");
 const socialRoutes = require("./routes/socialRoutes");
 
 const reviewRoutes = require("./routes/reviewRoutes");
-const campReviewRoutes = require("./routes/campReviewRoutes");
+const campReviewRoutes = require('./routes/campreviewRoutes');
 
 const userRoutes = require("./routes/userRoutes");
 
