@@ -1,60 +1,102 @@
-const db = require('../config/db')
+const db = require("../config/db");
 
-exports.createCamp = async(data)=>{
+exports.create = async (camp) => {
+  const sql = `
+    INSERT INTO camps (
+      organizer_id, title, tagline, description, location,
+      event_date, registration_deadline, organizer_name, contact_email, contact_phone,
+      poster_url, headline_image_url, status, type
+    )
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+    RETURNING id
+  `;
+  const values = [
+    camp.organizer_id, camp.title, camp.tagline, camp.description,
+    camp.location, camp.event_date, camp.registration_deadline || null,
+    camp.organizer_name, camp.contact_email, camp.contact_phone,
+    camp.poster_url, camp.headline_image_url, camp.status, camp.type || null,
+  ];
+  const result = await db.query(sql, values);
+  return { id: result.rows[0].id };
+};
 
- return db.query(
+exports.getAll = async () => {
+  const result = await db.query(`
+    SELECT id, title, tagline, location, event_date, registration_deadline,
+           organizer_name, poster_url, headline_image_url,
+           status, type, camp_status, created_at
+    FROM camps
+    WHERE status = 'approved'
+    ORDER BY created_at DESC
+  `);
+  return result.rows;
+};
 
-`INSERT INTO camps
+exports.getRecent = async (limit = 4) => {
+  const result = await db.query(`
+    SELECT c.id, c.title, c.tagline, c.location,
+           c.event_date, c.registration_deadline, c.organizer_name,
+           c.poster_url, c.headline_image_url,
+           c.status, c.camp_status, c.created_at,
+           ROUND(AVG(r.rating)::numeric, 1) AS avg_rating,
+           COUNT(r.id) AS review_count
+    FROM camps c
+    LEFT JOIN reviews r ON r.camp_id = c.id
+    WHERE c.status = 'approved'
+    GROUP BY c.id
+    ORDER BY c.created_at DESC
+    LIMIT $1
+  `, [limit]);
+  return result.rows;
+};
 
-(
-organizer_id,
-title,
-tagline,
-category,
-description,
-event_date,
-event_format,
-location,
-max_participants,
-price,
-eligibility,
-contact_name,
-contact_email,
-contact_phone,
-organizer_name,
-application_link,
-poster_url,
-headline_image_url
-)
+exports.getPopular = async (limit = 5) => {
+  const result = await db.query(`
+    SELECT c.id, c.title, c.tagline, c.location,
+           c.event_date, c.registration_deadline, c.organizer_name,
+           c.poster_url, c.headline_image_url,
+           c.status, c.created_at,
+           ROUND(AVG(r.rating)::numeric, 1) AS avg_rating,
+           COUNT(r.id) AS review_count
+    FROM camps c
+    LEFT JOIN reviews r ON r.camp_id = c.id
+    WHERE c.status = 'approved'
+    GROUP BY c.id
+    ORDER BY COUNT(r.id) DESC, c.created_at ASC
+    LIMIT $1
+  `, [limit]);
+  return result.rows;
+};
 
-VALUES
+exports.getById = async (id) => {
+  const result = await db.query(`
+    SELECT c.*, co.prize AS prizes
+    FROM camps c
+    LEFT JOIN competitions co ON co.camp_id = c.id
+    WHERE c.id = $1
+  `, [id]);
+  return result.rows[0] || null;
+};
 
-($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+exports.getStats = async () => {
+  const result = await db.query(`
+    SELECT
+      COUNT(*) FILTER (WHERE status = 'approved') AS total,
+      COUNT(*) FILTER (WHERE status = 'approved' AND event_date >= NOW()) AS open,
+      COUNT(*) FILTER (WHERE status = 'approved' AND event_date < NOW()) AS ended
+    FROM camps
+  `);
+  return result.rows[0];
+};
 
-RETURNING *
-`,
-
-[
-data.organizer_id,
-data.title,
-data.tagline,
-data.category,
-data.description,
-data.event_date,
-data.event_format,
-data.location,
-data.max_participants,
-data.price,
-data.eligibility,
-data.contact_name,
-data.contact_email,
-data.contact_phone,
-data.organizer_name,
-data.application_link,
-data.poster_url,
-data.headline_image_url
-]
-
-)
-
-}
+exports.getCountByType = async () => {
+  const result = await db.query(`
+    SELECT type, COUNT(*) AS count
+    FROM camps
+    WHERE status = 'approved' AND type IS NOT NULL
+    GROUP BY type
+  `);
+  const map = {};
+  result.rows.forEach((r) => { map[r.type] = parseInt(r.count); });
+  return map;
+};

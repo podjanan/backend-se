@@ -1,27 +1,23 @@
-const competitionModel = require('../models/competitionModel')
+const competitionModel = require("../models/competitionModel");
 
-exports.createCompetition = async(req,res)=>{
+exports.createCompetition = async (req, res) => {
+  try {
+    const data = req.body;
 
- try{
-    const id = await competitionModel.createCompetition({
-        organizer_id:req.user.id,
-        title:req.body.title,
-        tagline:req.body.tagline,
-        description:req.body.description,
-        category:req.body.category,
-        competition_format:req.body.competition_format,
-        registration_type:req.body.registration_type,
-        prize:req.body.prize,
-        max_participants:req.body.max_participants,
-        eligibility:req.body.eligibility,
-        application_link:req.body.application_link,
-        poster_url:req.body.poster_url
+    await competitionModel.create({
+      camp_id: data.camp_id,
+      competition_format: data.competition_format,
+      registration_type: data.registration_type,
+      team_size: data.team_size,
+      prize: data.prize
+    });
 
-  })
-    res.json({message:"Competition created",id})
+    res.status(201).json({
+      message: "Competition created"
+    });
 
- }catch(err){
-    res.status(500).json(err.message)
-}
-
-}
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
+};

@@ -1,51 +1,75 @@
-const db = require('../config/db')
+const db = require("../config/db");
 
+exports.approveCamp = async (req, res) => {
+  try {
+    await db.query("UPDATE camps SET status = 'approved' WHERE id = $1", [req.params.id]);
+    res.json({ message: "approved" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
-// approve
-exports.approveCamp = async(req,res)=>{
- try{
-  const {id} = req.params
-  await db.query(`UPDATE camps SET approval_status='approved' WHERE id=$1`,[id])
-    res.json("Camp approved")
-    }catch(err){
-        res.status(500).json(err.message)
- }
-}
+exports.rejectCamp = async (req, res) => {
+  try {
+    await db.query("UPDATE camps SET status = 'rejected' WHERE id = $1", [req.params.id]);
+    res.json({ message: "rejected" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
+exports.getAllCampsAdmin = async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT id, title, tagline, description, organizer_name,
+             contact_email, contact_phone, location, status, type,
+             event_date, registration_deadline, created_at,
+             poster_url, headline_image_url
+      FROM camps
+      ORDER BY created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
+exports.getAllUsers = async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT id, full_name, email, role, status, created_at
+      FROM users
+      ORDER BY created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
-// reject
-exports.rejectCamp = async(req,res)=>{
- try{
-    const {id} = req.params
-    await db.query(`UPDATE campsSET approval_status='rejected'WHERE id=$1`,[id])
-    res.json("Camp rejected")
-}catch(err){
-    res.status(500).json(err.message)
-}
-}
+exports.deleteCamp = async (req, res) => {
+  try {
+    await db.query("DELETE FROM camps WHERE id = $1", [req.params.id]);
+    res.json({ message: "ลบค่ายสำเร็จ" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
+exports.deleteUser = async (req, res) => {
+  try {
+    await db.query("DELETE FROM users WHERE id = $1", [req.params.id]);
+    res.json({ message: "ลบผู้ใช้สำเร็จ" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 
-
-// change camp status
-exports.updateCampStatus = async(req,res)=>{
- try{
-    const {id} = req.params
-    const {camp_status} = req.body
-    await db.query(`UPDATE camps SET camp_status=$1 WHERE id=$2`,[camp_status,id])
-    res.json("Camp status updated")
- }catch(err){
-    res.status(500).json(err.message)
-}
-
-}
-
-// get all camps
-exports.getAllCamps = async(req,res)=>{
-    try{
-        const result = await db.query(`SELECT * FROM camps ORDER BY created_at DESC`)
-        res.json(result.rows)
-    }catch(err){
-        res.status(500).json(err.message)
- }
-}
+exports.deleteReview = async (req, res) => {
+  try {
+    await db.query("DELETE FROM review_web WHERE id = $1", [req.params.id]);
+    res.json({ message: "ลบรีวิวสำเร็จ" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

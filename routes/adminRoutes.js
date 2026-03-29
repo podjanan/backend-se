@@ -1,11 +1,14 @@
-const router = require('express').Router()
-const controller = require('../controllers/adminController')
-const auth = require('../middlewares/authMiddleware')
-const admin = require('../middlewares/adminMiddleware')
+const express = require("express");
+const router = express.Router();
+const adminController = require("../controllers/adminController");
+const auth = require("../middlewares/authMiddleware");
 
-router.put('/camp/:id/approve',auth,admin,controller.approveCamp)
-router.put('/camp/:id/reject',auth,admin,controller.rejectCamp)
-router.put('/camp/:id/status',auth,admin,controller.updateCampStatus)
-router.get('/camps',auth,admin,controller.getAllCamps)
+router.get("/camps",         auth, adminController.getAllCampsAdmin);
+router.get("/users",         auth, adminController.getAllUsers);
+router.put("/approve/:id",   auth, adminController.approveCamp);
+router.put("/reject/:id",    auth, adminController.rejectCamp);
+router.delete("/camps/:id",  auth, adminController.deleteCamp);
+router.delete("/users/:id",  auth, adminController.deleteUser);
+router.delete("/reviews/:id",auth, adminController.deleteReview);
 
-module.exports = router
+module.exports = router;
