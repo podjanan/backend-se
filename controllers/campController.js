@@ -1,17 +1,22 @@
 const campModel = require("../models/campModel");
 const competitionModel = require("../models/competitionModel");
 const socialModel = require("../models/socialModel");
+const { uploadToSupabase } = require("../config/supabase");
 
 exports.createCamp = async (req, res) => {
   try {
     const data = req.body;
-    const poster = req.files?.poster?.[0]?.filename || null;
-    const headline = req.files?.headline?.[0]?.filename || null;
     const organizer_id = req.user?.id || req.user?.userId || req.user?.user_id || null;
 
     console.log("📥 req.body:", data);
     console.log("📁 req.files:", req.files);
     console.log("👤 organizer_id:", organizer_id);
+
+    // ── อัปโหลดรูปขึ้น Supabase ─────────────────────────────────────────────
+    const posterFile   = req.files?.poster?.[0]   || null;
+    const headlineFile = req.files?.headline?.[0] || null;
+    const poster_url          = posterFile   ? await uploadToSupabase(posterFile,   "camps/posters")   : null;
+    const headline_image_url  = headlineFile ? await uploadToSupabase(headlineFile, "camps/headlines") : null;
 
     const camp = {
       organizer_id,
@@ -25,8 +30,8 @@ exports.createCamp = async (req, res) => {
       contact_name: data.contact_name || data.organizer_name || null,
       contact_email: data.contact_email,
       contact_phone: data.contact_phone,
-      poster_url: poster,
-      headline_image_url: headline,
+      poster_url,
+      headline_image_url,
       status: "pending",
       type: data.type || null,
       category: data.category || null,
@@ -219,14 +224,18 @@ exports.editCamp = async (req, res) => {
     const db = require("../config/db");
     const organizer_id = req.user?.id || req.user?.userId || req.user?.user_id;
     const data = req.body;
-    const poster = req.files?.poster?.[0]?.filename || null;
-    const headline = req.files?.headline?.[0]?.filename || null;
 
     const check = await db.query(
       `SELECT id FROM camps WHERE id = $1 AND organizer_id = $2`,
       [req.params.id, organizer_id]
     );
     if (!check.rows[0]) return res.status(403).json({ message: "ไม่มีสิทธิ์แก้ไขค่ายนี้" });
+
+    // ── อัปโหลดรูปใหม่ถ้ามี ──────────────────────────────────────────────────
+    const posterFile   = req.files?.poster?.[0]   || null;
+    const headlineFile = req.files?.headline?.[0] || null;
+    const poster_url         = posterFile   ? await uploadToSupabase(posterFile,   "camps/posters")   : null;
+    const headline_image_url = headlineFile ? await uploadToSupabase(headlineFile, "camps/headlines") : null;
 
     await db.query(`
       UPDATE camps SET
@@ -261,8 +270,8 @@ exports.editCamp = async (req, res) => {
       data.contact_name || data.organizer_name || null,
       data.contact_email || null,
       data.contact_phone || null,
-      poster,
-      headline,
+      poster_url,         // null ถ้าไม่ได้ส่งรูปมา → COALESCE จะใช้ค่าเดิม
+      headline_image_url,
       data.category || null,
       data.event_format || null,
       data.max_participants || null,

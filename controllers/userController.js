@@ -1,5 +1,6 @@
 const userModel = require("../models/userModel");
 const bcrypt = require("bcryptjs");
+const { uploadToSupabase } = require("../config/supabase");
 
 exports.getUser = async (req, res) => {
   try {
@@ -14,7 +15,13 @@ exports.getUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const { full_name } = req.body;
-    const avatar_url = req.file?.filename || null;
+
+    // ── อัปโหลด avatar ขึ้น Supabase ────────────────────────────────────────
+    let avatar_url = null;
+    if (req.file) {
+      avatar_url = await uploadToSupabase(req.file, "avatars");
+    }
+
     const updated = await userModel.updateProfile(req.params.id, { full_name, avatar_url });
     if (!updated) return res.status(404).json({ message: "User not found" });
     res.json(updated);
@@ -28,7 +35,6 @@ exports.changePassword = async (req, res) => {
     const { oldPassword, newPassword } = req.body;
     if (!oldPassword || !newPassword) return res.status(400).json({ message: "กรอกข้อมูลให้ครบ" });
 
-    // ดึง user จาก id ใน params
     const user = await userModel.getById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
