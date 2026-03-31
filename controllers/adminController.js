@@ -47,6 +47,19 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+exports.updateUserStatus = async (req, res) => {
+  const { status } = req.body;
+  if (!["active", "pending"].includes(status)) {
+    return res.status(400).json({ message: "สถานะไม่ถูกต้อง" });
+  }
+  try {
+    await db.query("UPDATE users SET status = $1 WHERE id = $2", [status, req.params.id]);
+    res.json({ message: "อัปเดตสถานะเรียบร้อย" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 exports.deleteCamp = async (req, res) => {
   try {
     await db.query("DELETE FROM camps WHERE id = $1", [req.params.id]);

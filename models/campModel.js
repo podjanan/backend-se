@@ -4,17 +4,47 @@ exports.create = async (camp) => {
   const sql = `
     INSERT INTO camps (
       organizer_id, title, tagline, description, location,
-      event_date, registration_deadline, organizer_name, contact_email, contact_phone,
-      poster_url, headline_image_url, status, type
+      event_date, registration_deadline, organizer_name,
+      contact_name, contact_email, contact_phone,
+      poster_url, headline_image_url, status,
+      type, category, event_format,
+      max_participants, price, price_type,
+      eligibility, application_link
     )
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+    VALUES (
+      $1,$2,$3,$4,$5,
+      $6,$7,$8,
+      $9,$10,$11,
+      $12,$13,$14,
+      $15,$16,$17,
+      $18,$19,$20,
+      $21,$22
+    )
     RETURNING id
   `;
   const values = [
-    camp.organizer_id, camp.title, camp.tagline, camp.description,
-    camp.location, camp.event_date, camp.registration_deadline || null,
-    camp.organizer_name, camp.contact_email, camp.contact_phone,
-    camp.poster_url, camp.headline_image_url, camp.status, camp.type || null,
+    camp.organizer_id,
+    camp.title,
+    camp.tagline,
+    camp.description,
+    camp.location,
+    camp.event_date,
+    camp.registration_deadline || null,
+    camp.organizer_name,
+    camp.contact_name || camp.organizer_name || null,   // ✅ เพิ่ม
+    camp.contact_email,
+    camp.contact_phone,
+    camp.poster_url,
+    camp.headline_image_url,
+    camp.status,
+    camp.type || null,
+    camp.category || null,                              // ✅ เพิ่ม
+    camp.event_format || null,                          // ✅ เพิ่ม
+    camp.max_participants || null,                      // ✅ เพิ่ม
+    camp.price || null,                                 // ✅ เพิ่ม
+    camp.price_type || null,                            // ✅ เพิ่ม
+    camp.eligibility || null,                           // ✅ เพิ่ม
+    camp.application_link || null,
   ];
   const result = await db.query(sql, values);
   return { id: result.rows[0].id };
@@ -70,7 +100,7 @@ exports.getPopular = async (limit = 5) => {
 
 exports.getById = async (id) => {
   const result = await db.query(`
-    SELECT c.*, co.prize AS prizes
+    SELECT c.*, co.prize AS prizes, c.application_link
     FROM camps c
     LEFT JOIN competitions co ON co.camp_id = c.id
     WHERE c.id = $1
