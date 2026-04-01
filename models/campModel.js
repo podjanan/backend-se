@@ -54,7 +54,7 @@ exports.getAll = async () => {
   const result = await db.query(`
     SELECT id, title, tagline, location, event_date, registration_deadline,
            organizer_name, poster_url, headline_image_url,
-           status, type, camp_status, created_at
+           status, type, category, camp_status, created_at
     FROM camps
     WHERE status = 'approved'
     ORDER BY created_at DESC
